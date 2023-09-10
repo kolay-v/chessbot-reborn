@@ -5,6 +5,7 @@
   "main": "src/main.ta",
   "scripts": {
     "dev": "./scripts/run.bash",
+    "build": "tsc -outDir dist",
     "lint": "eslint src/**/*.ts"
   },
   "author": "",
