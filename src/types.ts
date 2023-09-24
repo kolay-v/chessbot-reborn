@@ -1,6 +1,6 @@
 import { type Context, type InlineKeyboard, type SessionFlavor } from 'grammy'
 import { type Database } from './database'
-import { type Square } from 'chess'
+import { type Piece, type Square } from 'chess'
 
 interface SessionData {
   wait: boolean
@@ -26,10 +26,19 @@ interface BoardMessage {
 
 type MyContext = Context & { db: Database } & SessionFlavor<SessionData>
 
+type Color = 'white' | 'black'
+
+type MaterialDiffSide = Record<Piece['type'], number>
+
+type MaterialDiff = Record<Color, MaterialDiffSide>
+
 export type {
   SessionData,
   MyContext,
   CompactUser,
   GameEntry,
-  BoardMessage
+  BoardMessage,
+  Color,
+  MaterialDiff,
+  MaterialDiffSide
 }

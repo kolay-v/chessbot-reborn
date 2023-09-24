@@ -108,22 +108,21 @@ inlineGameComposer
     }
 
     const gameClient = chess.create({ PGN: true })
-    const { board } = gameClient.getStatus()
+    const status = gameClient.getStatus()
+
+    const boardMsg = getBoardMessage({
+      status,
+      isWhiteTurn: true,
+      player: ctx.from,
+      enemy
+    })
     await ctx.editMessageMedia({
       type: 'photo',
-      media: makeBoardImageUrl(board),
-      caption: formatTopMessage(
-        true,
-        iAmWhite ? ctx.from : enemy,
-        !iAmWhite ? ctx.from : enemy
-      ),
+      media: boardMsg.imageUrl,
+      caption: boardMsg.text,
       parse_mode: 'HTML'
-    }, {
-      reply_markup: renderBoardKeyboard({
-        squares: board.squares,
-        isWhite: true
-      })
-    }).catch(console.error)
+    }, { reply_markup: boardMsg.keyboard })
+      .catch(console.error)
     ctx.session.wait = false
   })
 
@@ -370,6 +369,7 @@ inlineGameComposer.callbackQuery('last_turn', async ctx => {
   ctx.session.selected = null
 
   const gameClient = chess.create({ PGN: true })
+  const isWhite = isWhiteTurn(moves)
 
   const lastMove = moves.pop()
   if (lastMove == null) {
@@ -394,7 +394,7 @@ inlineGameComposer.callbackQuery('last_turn', async ctx => {
   console.log(prevStatus.notatedMoves[lastMove], lastMove, arrow)
   const prevBoardMsg = getBoardMessage({
     status: prevStatus,
-    isWhiteTurn: isWhiteTurn(moves),
+    isWhiteTurn: isWhite,
     player: enemy,
     enemy: ctx.from,
     lastMoveArrow: arrow
@@ -408,7 +408,7 @@ inlineGameComposer.callbackQuery('last_turn', async ctx => {
   const status = gameClient.getStatus()
   const boardMsg = getBoardMessage({
     status,
-    isWhiteTurn: !isWhiteTurn(moves),
+    isWhiteTurn: isWhite,
     enemy,
     player: ctx.from
   })

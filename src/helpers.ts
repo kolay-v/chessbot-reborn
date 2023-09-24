@@ -1,11 +1,11 @@
 import { type InlineKeyboardButton } from 'grammy/out/types'
-import { type AlgebraicGameStatus, type ChessBoard, type NotatedMove, type Square } from 'chess'
+import { type AlgebraicGameStatus, type ChessBoard, type NotatedMove, type Piece, type Square } from 'chess'
 import { InlineKeyboard } from 'grammy'
-import { type BoardMessage, type CompactUser } from './types'
+import { type BoardMessage, type Color, type CompactUser, type MaterialDiff, type MaterialDiffSide } from './types'
 
 const { BOARD_IMAGE_BASE_URL = '' } = process.env
 
-const emoji = {
+const emoji: Record<Color, Record<Piece['type'], string>> = {
   white: {
     rook: '♖',
     knight: '♘',
@@ -24,6 +24,8 @@ const emoji = {
   }
 }
 
+const getCurrentSide = (isWhiteTurn: boolean): Color => isWhiteTurn ? 'white' : 'black'
+
 const escapeHTML = (text: string): string => {
   const escapeChar = (c: string): string => {
     switch (c) {
@@ -35,6 +37,8 @@ const escapeHTML = (text: string): string => {
   }
   return text.split('').map(escapeChar).join('')
 }
+
+const opposite = (color: Color): Color => color === 'white' ? 'black' : 'white'
 
 // const defaultFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'
 
@@ -134,9 +138,11 @@ const makeBoardImageUrl = (board: ChessBoard, { rotate, boardSize, moves, arrows
   return `${BOARD_IMAGE_BASE_URL}${fen}.jpg?${params.toString()}`
 }
 
-const formatTopMessage = (isWhiteTurn: boolean, player: CompactUser, enemy?: CompactUser): string => {
-  const playerString = `<a href="tg://user?id=${player.id}">${escapeHTML(player.first_name)}</a>`
-  const enemyString = (enemy != null) ? `<a href="tg://user?id=${enemy.id}">${escapeHTML(enemy.first_name)}</a>` : '?'
+type FormatTopMessageUser = CompactUser & { materialDiffString?: string | null }
+
+const formatTopMessage = (isWhiteTurn: boolean, player: FormatTopMessageUser, enemy?: FormatTopMessageUser): string => {
+  const playerString = `<a href="tg://user?id=${player.id}">${escapeHTML(player.first_name)}</a>${player.materialDiffString ?? ''}`
+  const enemyString = (enemy != null) ? `<a href="tg://user?id=${enemy.id}">${escapeHTML(enemy.first_name)}</a>${enemy.materialDiffString ?? ''}` : '?'
   const getSide = (white: boolean): string => white ? 'White' : 'Black'
   return `${getSide(!isWhiteTurn)} (top) - ${enemyString}
 ${getSide(isWhiteTurn)} (bottom) - ${playerString}
@@ -152,24 +158,76 @@ interface GetBoardMessageParams {
   lastMoveArrow?: string
 }
 
+const getMaterialDiff = (board: ChessBoard): MaterialDiff => {
+  const diff = {
+    white: { king: 0, queen: 0, rook: 0, bishop: 0, knight: 0, pawn: 0 },
+    black: { king: 0, queen: 0, rook: 0, bishop: 0, knight: 0, pawn: 0 }
+  }
+  for (const square of board.squares) {
+    const { piece } = square
+    if (piece == null) {
+      continue
+    }
+    const color = piece.side.name
+    const { type: role } = piece
+    const them = diff[opposite(color)]
+    if (them[role] > 0) {
+      them[role]--
+    } else {
+      diff[color][role]++
+    }
+  }
+  return diff
+}
+
+const getScore = (diff: MaterialDiff): number => (
+  (diff.white.queen - diff.black.queen) * 9 +
+    (diff.white.rook - diff.black.rook) * 5 +
+    (diff.white.bishop - diff.black.bishop) * 3 +
+    (diff.white.knight - diff.black.knight) * 3 +
+    (diff.white.pawn - diff.black.pawn)
+)
+
+const formatMaterialString = (diff: MaterialDiffSide, score: number): string | null => {
+  const emojis: string[] = []
+  for (const [role, count] of Object.entries(diff)) {
+    if (count > 0) {
+      emojis.push(emoji.white[role as Piece['type']].repeat(count))
+    }
+  }
+  if (emojis.length > 0) {
+    return `  ${emojis.join(' ')}${score > 0 ? ` +${score}` : ''}`
+  } else {
+    return null
+  }
+}
+
 const getBoardMessage = ({ status, isWhiteTurn, player, enemy, moves = [], lastMoveArrow }: GetBoardMessageParams): BoardMessage => {
-  const isLastTurn = lastMoveArrow != null
+  const { board } = status
+  const materialDiff = getMaterialDiff(board)
+  const materialScore = getScore(materialDiff)
   return {
-    imageUrl: makeBoardImageUrl(status.board, {
-      rotate: isLastTurn ? isWhiteTurn : !isWhiteTurn,
+    imageUrl: makeBoardImageUrl(board, {
+      rotate: !isWhiteTurn,
       moves,
       arrows: lastMoveArrow != null ? [lastMoveArrow] : []
     }),
-    text: formatTopMessage(isWhiteTurn, player, enemy),
+    text: formatTopMessage(isWhiteTurn, {
+      ...player,
+      materialDiffString: formatMaterialString(materialDiff[getCurrentSide(isWhiteTurn)], isWhiteTurn ? materialScore : -materialScore)
+    }, {
+      ...enemy,
+      materialDiffString: formatMaterialString(materialDiff[getCurrentSide(!isWhiteTurn)], !isWhiteTurn ? materialScore : -materialScore)
+    }),
     keyboard: renderBoardKeyboard({
-      squares: status.board.squares.map((square) => {
+      squares: board.squares.map((square) => {
         const move = moves
           .find(({ dest }) => dest.file === square.file &&
                   dest.rank === square.rank)
 
         return { ...square, move }
       }),
-      isWhite: isLastTurn ? !isWhiteTurn : isWhiteTurn
+      isWhite: isWhiteTurn
 
     }).row().text('Last turn.', 'last_turn')
   }

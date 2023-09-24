@@ -31,4 +31,5 @@ bot.use(
 
 bot.use(mainComposer)
 
-bot.start().catch(console.error)
+bot.start({ drop_pending_updates: true })
+  .catch(console.error)
