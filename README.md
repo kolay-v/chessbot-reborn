@@ -9,6 +9,6 @@ Still in development. Soon will be accessible on old [@chessy_bot](https://t.me/
 ## TODO
 - [x] Add playable chessboard
 - [ ] Add promotion
-- [ ] Add last move button
+- [x] Add last move button
 - [ ] Make it work with webhook
 

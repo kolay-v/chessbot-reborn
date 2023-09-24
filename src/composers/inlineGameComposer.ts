@@ -3,8 +3,27 @@
  */
 import chess from 'chess'
 import { Composer } from 'grammy'
-import { formatTopMessage, getBoardMessage, isWhiteTurn, makeBoardImageUrl, renderBoardKeyboard } from '../helpers'
+import {
+  formatTopMessage,
+  getBoardMessage,
+  isWhiteTurn,
+  makeBoardImageUrl,
+  renderBoardKeyboard,
+  sleep
+} from '../helpers'
 import { type BoardMessage, type MyContext } from '../types'
+
+// TODO move this???
+const updateBoard = async (ctx: MyContext, boardMsg: BoardMessage): Promise<void> => {
+  await ctx.editMessageMedia({
+    type: 'photo',
+    media: boardMsg.imageUrl,
+    caption: boardMsg.text,
+    parse_mode: 'HTML'
+  }, {
+    reply_markup: boardMsg.keyboard
+  }).catch(console.error)
+}
 
 const inlineGameComposer = new Composer<MyContext>()
 
@@ -109,16 +128,6 @@ inlineGameComposer
   })
 
 inlineGameComposer.callbackQuery(/^([a-h])([1-8])([QRNB])?$/, async ctx => {
-  const updateBoard = async (boardMsg: BoardMessage): Promise<void> => {
-    await ctx.editMessageMedia({
-      type: 'photo',
-      media: boardMsg.imageUrl,
-      caption: boardMsg.text,
-      parse_mode: 'HTML'
-    }, {
-      reply_markup: boardMsg.keyboard
-    }).catch(console.error)
-  }
   ctx.session.wait = true
   const game = await ctx.db.getGame(ctx.inlineMessageId)
   if (game == null) {
@@ -186,7 +195,6 @@ inlineGameComposer.callbackQuery(/^([a-h])([1-8])([QRNB])?$/, async ctx => {
       pressed.file === ctx.session.selected.file &&
       pressed.rank === ctx.session.selected.rank)
   ) { // if clicked on own piece and not on selected piece
-    console.log('selection')
     const allowedMoves = Object.keys(status.notatedMoves)
       .filter((key) => status.notatedMoves[key].src === pressed)
       .map((key) => ({ ...status.notatedMoves[key], key }))
@@ -207,7 +215,7 @@ inlineGameComposer.callbackQuery(/^([a-h])([1-8])([QRNB])?$/, async ctx => {
       player: ctx.from,
       enemy
     })
-    await updateBoard(boardMsg)
+    await updateBoard(ctx, boardMsg)
 
     ctx.session.selected = pressed
 
@@ -294,7 +302,7 @@ inlineGameComposer.callbackQuery(/^([a-h])([1-8])([QRNB])?$/, async ctx => {
         player: enemy,
         enemy: ctx.from
       })
-      await updateBoard(boardMsg)
+      await updateBoard(ctx, boardMsg)
 
       ctx.session.selected = null
 
@@ -319,9 +327,97 @@ inlineGameComposer.callbackQuery(/^([a-h])([1-8])([QRNB])?$/, async ctx => {
     player: ctx.from,
     enemy
   })
-  await updateBoard(boardMsg)
+  await updateBoard(ctx, boardMsg)
 
   // console.log({ game })
+  ctx.session.wait = false
+})
+
+inlineGameComposer.callbackQuery('last_turn', async ctx => {
+  ctx.session.wait = true
+  const game = await ctx.db.getGame(ctx.inlineMessageId)
+  if (game == null) {
+    ctx.session.wait = false
+    await ctx.answerCallbackQuery('Game was removed, sorry. Start new one.').catch(console.error)
+    return
+  }
+
+  if (game.whites_id !== ctx.from.id && game.blacks_id !== ctx.from.id) {
+    ctx.session.wait = false
+    await ctx.answerCallbackQuery('Sorry, this game is busy. Try to make a new one.').catch(console.error)
+    return
+  }
+
+  const moves = await ctx.db.getGameMoves(game.id)
+
+  if ((isWhiteTurn(moves) && ctx.from.id === game.blacks_id) ||
+    (!isWhiteTurn(moves) && ctx.from.id === game.whites_id)) {
+    ctx.session.wait = false
+    await ctx.answerCallbackQuery('Wait, please. Now is not your turn.').catch(console.error)
+    return
+  }
+
+  const enemy = await ctx.db.getUser(ctx.from.id === game.whites_id
+    ? game.blacks_id
+    : game.whites_id)
+  if (enemy == null) {
+    ctx.session.wait = false
+    await ctx.answerCallbackQuery('Game was removed, sorry. Start new one.')
+      .catch(console.error)
+    return
+  }
+
+  ctx.session.selected = null
+
+  const gameClient = chess.create({ PGN: true })
+
+  const lastMove = moves.pop()
+  if (lastMove == null) {
+    ctx.session.wait = false
+    await ctx.answerCallbackQuery('There is no last turn.')
+      .catch(console.error)
+    return
+  }
+
+  moves.forEach(entry => {
+    try {
+      gameClient.move(entry)
+    } catch (error) {
+      console.error(error)
+    }
+  })
+
+  const prevStatus = gameClient.getStatus()
+
+  const move = prevStatus.notatedMoves[lastMove]
+  const arrow = `${move.src.file}${move.src.rank}${move.dest.file}${move.dest.rank}`
+  console.log(prevStatus.notatedMoves[lastMove], lastMove, arrow)
+  const prevBoardMsg = getBoardMessage({
+    status: prevStatus,
+    isWhiteTurn: isWhiteTurn(moves),
+    player: enemy,
+    enemy: ctx.from,
+    lastMoveArrow: arrow
+  })
+
+  try {
+    gameClient.move(lastMove)
+  } catch (error) {
+    console.error(error)
+  }
+  const status = gameClient.getStatus()
+  const boardMsg = getBoardMessage({
+    status,
+    isWhiteTurn: !isWhiteTurn(moves),
+    enemy,
+    player: ctx.from
+  })
+
+  await ctx.answerCallbackQuery().catch(console.error)
+  await updateBoard(ctx, prevBoardMsg)
+  console.log(prevBoardMsg.imageUrl)
+  await sleep(3000)
+  await updateBoard(ctx, boardMsg)
   ctx.session.wait = false
 })
 

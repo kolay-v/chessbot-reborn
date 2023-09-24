@@ -108,9 +108,10 @@ interface BoardImageOptions {
   rotate?: boolean
   boardSize?: number
   moves?: NotatedMove[]
+  arrows?: string[]
 }
 
-const makeBoardImageUrl = (board: ChessBoard, { rotate, boardSize, moves }: BoardImageOptions = {}): string => {
+const makeBoardImageUrl = (board: ChessBoard, { rotate, boardSize, moves, arrows }: BoardImageOptions = {}): string => {
   const boardWithFen = board as ChessBoard & { getFen: () => string }
   const fen = encodeURIComponent(boardWithFen.getFen())
 
@@ -120,6 +121,11 @@ const makeBoardImageUrl = (board: ChessBoard, { rotate, boardSize, moves }: Boar
   }
   if (boardSize != null) {
     params.append('board_size', String(boardSize))
+  }
+  if (arrows != null) {
+    arrows.forEach(arrow => {
+      params.append('arrows', arrow)
+    })
   }
   if (moves != null && moves.length !== 0) {
     params.append('marks', moves.map(({ dest }) => `${dest.file}${dest.rank}`).join(','))
@@ -142,12 +148,18 @@ interface GetBoardMessageParams {
   isWhiteTurn: boolean
   player: CompactUser
   enemy: CompactUser
-  moves: NotatedMove[]
+  moves?: NotatedMove[]
+  lastMoveArrow?: string
 }
 
-const getBoardMessage = ({ status, isWhiteTurn, player, enemy, moves = [] }: GetBoardMessageParams): BoardMessage => {
+const getBoardMessage = ({ status, isWhiteTurn, player, enemy, moves = [], lastMoveArrow }: GetBoardMessageParams): BoardMessage => {
+  const isLastTurn = lastMoveArrow != null
   return {
-    imageUrl: makeBoardImageUrl(status.board, { rotate: !isWhiteTurn, moves }),
+    imageUrl: makeBoardImageUrl(status.board, {
+      rotate: isLastTurn ? isWhiteTurn : !isWhiteTurn,
+      moves,
+      arrows: lastMoveArrow != null ? [lastMoveArrow] : []
+    }),
     text: formatTopMessage(isWhiteTurn, player, enemy),
     keyboard: renderBoardKeyboard({
       squares: status.board.squares.map((square) => {
@@ -157,17 +169,25 @@ const getBoardMessage = ({ status, isWhiteTurn, player, enemy, moves = [] }: Get
 
         return { ...square, move }
       }),
-      isWhite: isWhiteTurn
-    })
+      isWhite: isLastTurn ? !isWhiteTurn : isWhiteTurn
+
+    }).row().text('Last turn.', 'last_turn')
   }
 }
 
 const isWhiteTurn = (moves: string[]): boolean => (moves.length % 2) === 0
+
+const sleep = async (timeMs: number): Promise<void> => {
+  await new Promise((resolve) => {
+    setTimeout(resolve, timeMs)
+  })
+}
 
 export {
   isWhiteTurn,
   formatTopMessage,
   renderBoardKeyboard,
   makeBoardImageUrl,
-  getBoardMessage
+  getBoardMessage,
+  sleep
 }
