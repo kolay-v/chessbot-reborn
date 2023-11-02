@@ -1,6 +1,7 @@
 import { Composer, InlineKeyboard } from 'grammy'
 import { inlineGameComposer } from './inlineGameComposer'
 import { type MyContext } from '../types'
+import { adminComposer } from './adminComposer'
 
 const mainComposer = new Composer<MyContext>()
 
@@ -17,6 +18,7 @@ mainComposer.command('start', async ctx => {
     })
 })
 
+mainComposer.use(adminComposer)
 mainComposer.use(inlineGameComposer)
 
 export { mainComposer }

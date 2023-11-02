@@ -35,6 +35,12 @@ type MaterialDiffSide = Record<Piece['type'], number>
 
 type MaterialDiff = Record<Color, MaterialDiffSide>
 
+interface DatabaseStats {
+  boardsCreated: number
+  movesMade: number
+  uniqueUsers: number
+}
+
 export type {
   SessionData,
   MyContext,
@@ -43,5 +49,6 @@ export type {
   BoardMessage,
   Color,
   MaterialDiff,
-  MaterialDiffSide
+  MaterialDiffSide,
+  DatabaseStats
 }

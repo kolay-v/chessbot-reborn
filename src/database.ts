@@ -2,7 +2,7 @@
 import knex from 'knex'
 import knexFile from '../knexfile'
 import { type User } from '@grammyjs/types'
-import { type CompactUser, type GameEntry } from './types'
+import { type CompactUser, type DatabaseStats, type GameEntry } from './types'
 
 export class Database {
   private readonly knex = knex(knexFile)
@@ -73,5 +73,25 @@ export class Database {
       game_id: gameId,
       entry
     }).into('moves')
+  }
+
+  async getDatabaseStats (): Promise<DatabaseStats> {
+    const count = async (tableName: string): Promise<number> => await this.knex
+      .count('id')
+      .from(tableName)
+      .first()
+      .then(value => value ?? {})
+      .then(value => value.count)
+      .then(value => Number(value ?? 0))
+    const [movesMade, uniqueUsers, boardsCreated] = await Promise.all([
+      await count('moves'),
+      await count('users'),
+      await count('games')
+    ])
+    return {
+      movesMade,
+      uniqueUsers,
+      boardsCreated
+    }
   }
 }
