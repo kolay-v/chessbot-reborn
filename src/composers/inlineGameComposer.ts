@@ -123,6 +123,11 @@ inlineGameComposer
     }, { reply_markup: boardMsg.keyboard })
       .catch(console.error)
     ctx.session.wait = false
+    ctx.log({
+      type: 'join',
+      creator: enemy,
+      user: ctx.from
+    })
   })
 
 inlineGameComposer.callbackQuery(/^v2:([a-h])([1-8])$/, async ctx => {
@@ -283,6 +288,10 @@ inlineGameComposer.callbackQuery(/^v2:([a-h])([1-8])$/, async ctx => {
       }
 
       await ctx.db.addMove(game.id, makeMove)
+      ctx.log({
+        type: 'move',
+        from: ctx.from
+      })
 
       // log(
       //   preLog('MOVE', `${gameEntry.id} ${makeMove.key} ${gameMoves.length + 1} ${makeUserLog(ctx.from)}`),
@@ -413,9 +422,21 @@ inlineGameComposer.callbackQuery('v2:last_turn', async ctx => {
 
   await ctx.answerCallbackQuery().catch(console.error)
   await updateBoard(ctx, prevBoardMsg)
+  ctx.log({
+    type: 'last_turn',
+    from: ctx.from
+  })
   await sleep(3000)
   await updateBoard(ctx, boardMsg)
   ctx.session.wait = false
+})
+
+inlineGameComposer.chosenInlineResult(/^white|black$/, ctx => {
+  ctx.log({
+    type: 'board',
+    from: ctx.from,
+    side: ctx.chosenInlineResult.result_id
+  })
 })
 
 export { inlineGameComposer }

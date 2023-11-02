@@ -24,7 +24,10 @@ interface BoardMessage {
   keyboard: InlineKeyboard
 }
 
-type MyContext = Context & { db: Database } & SessionFlavor<SessionData>
+type MyContext = Context & {
+  db: Database
+  log: (obj: Record<string, any>) => void
+} & SessionFlavor<SessionData>
 
 type Color = 'white' | 'black'
 

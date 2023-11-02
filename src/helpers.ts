@@ -247,5 +247,6 @@ export {
   renderBoardKeyboard,
   makeBoardImageUrl,
   getBoardMessage,
+  escapeHTML,
   sleep
 }
