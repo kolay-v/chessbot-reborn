@@ -268,7 +268,7 @@ inlineGameComposer.callbackQuery(/^([a-h])([1-8])([QRNB])?$/, async ctx => {
     //   ctx.game.promotion = null
     // } else {
 
-    const makeMove = Object.keys(status.notatedMoves)
+    const makeMove = Object.keys(status.notatedMoves).reverse()
       .find((key) => {
         const { dest, src } = status.notatedMoves[key]
         return src.file === selected.file && src.rank === selected.rank &&
