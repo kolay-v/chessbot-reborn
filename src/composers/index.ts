@@ -10,6 +10,10 @@ mainComposer.command('start', async ctx => {
     {
       reply_markup: new InlineKeyboard()
         .switchInline('Play with friend', '')
+        .row()
+        .url('Source code', 'https://github.com/kolay-v/chessbot-reborn')
+        .row()
+        .url('Chat', 'https://t.me/chessbot_chat')
     })
 })
 
