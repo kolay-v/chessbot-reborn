@@ -31,5 +31,15 @@ bot.use(
 
 bot.use(mainComposer)
 
+bot.use(async ctx => {
+  await fetch('http://localhost:6572/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(ctx.update)
+  }).catch(console.error)
+})
+
 bot.start({ drop_pending_updates: true })
   .catch(console.error)

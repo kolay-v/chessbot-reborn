@@ -74,7 +74,7 @@ const renderBoardKeyboard = ({ squares = [], isWhite, /* actions, */ callbackOve
 
       return {
         text: `${square.move != null ? 'X' : ''}${piece}`,
-        callback_data: callbackOverride ?? `${col}${row}`
+        callback_data: callbackOverride ?? `v2:${col}${row}`
       }
     }
 
@@ -84,7 +84,7 @@ const renderBoardKeyboard = ({ squares = [], isWhite, /* actions, */ callbackOve
     // noinspection JSDeprecatedSymbols
     return {
       text: square?.move != null ? '·' : unescape('%u0020'),
-      callback_data: callbackOverride ?? `${col}${row}`
+      callback_data: callbackOverride ?? `v2:${col}${row}`
     }
   }))
 
@@ -229,7 +229,7 @@ const getBoardMessage = ({ status, isWhiteTurn, player, enemy, moves = [], lastM
       }),
       isWhite: isWhiteTurn
 
-    }).row().text('Last turn.', 'last_turn')
+    }).row().text('Last turn.', 'v2:last_turn')
   }
 }
 

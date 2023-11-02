@@ -50,7 +50,7 @@ inlineGameComposer.on('inline_query', async ctx => {
     reply_markup: renderBoardKeyboard({
       squares: board.squares,
       isWhite: false,
-      callbackOverride: `join:b:${ctx.from.id}`
+      callbackOverride: `v2:join:b:${ctx.from.id}`
     }).row().text('Join the game.', `join:b:${ctx.from.id}`)
   },
   {
@@ -64,7 +64,7 @@ inlineGameComposer.on('inline_query', async ctx => {
     reply_markup: renderBoardKeyboard({
       squares: board.squares,
       isWhite: false,
-      callbackOverride: `join:w:${ctx.from.id}`
+      callbackOverride: `v2:join:w:${ctx.from.id}`
     }).row().text('Join the game.', `join:w:${ctx.from.id}`)
   }], {
     cache_time: 0,
@@ -76,7 +76,7 @@ inlineGameComposer
   .filter((ctx): ctx is
     MyContext &
     { inlineMessageId: string } => ctx.inlineMessageId != null
-  ).callbackQuery(/join:([wb]):(\d+)/, async ctx => {
+  ).callbackQuery(/^v2:join:([wb]):(\d+)$/, async ctx => {
     const [, side, id] = ctx.match
     const enemyId = Number(id)
     const iAmWhite = side === 'w'
@@ -126,7 +126,7 @@ inlineGameComposer
     ctx.session.wait = false
   })
 
-inlineGameComposer.callbackQuery(/^([a-h])([1-8])([QRNB])?$/, async ctx => {
+inlineGameComposer.callbackQuery(/^v2:([a-h])([1-8])$/, async ctx => {
   ctx.session.wait = true
   const game = await ctx.db.getGame(ctx.inlineMessageId)
   if (game == null) {
@@ -332,7 +332,7 @@ inlineGameComposer.callbackQuery(/^([a-h])([1-8])([QRNB])?$/, async ctx => {
   ctx.session.wait = false
 })
 
-inlineGameComposer.callbackQuery('last_turn', async ctx => {
+inlineGameComposer.callbackQuery('v2:last_turn', async ctx => {
   ctx.session.wait = true
   const game = await ctx.db.getGame(ctx.inlineMessageId)
   if (game == null) {
@@ -391,7 +391,6 @@ inlineGameComposer.callbackQuery('last_turn', async ctx => {
 
   const move = prevStatus.notatedMoves[lastMove]
   const arrow = `${move.src.file}${move.src.rank}${move.dest.file}${move.dest.rank}`
-  console.log(prevStatus.notatedMoves[lastMove], lastMove, arrow)
   const prevBoardMsg = getBoardMessage({
     status: prevStatus,
     isWhiteTurn: isWhite,
@@ -415,7 +414,6 @@ inlineGameComposer.callbackQuery('last_turn', async ctx => {
 
   await ctx.answerCallbackQuery().catch(console.error)
   await updateBoard(ctx, prevBoardMsg)
-  console.log(prevBoardMsg.imageUrl)
   await sleep(3000)
   await updateBoard(ctx, boardMsg)
   ctx.session.wait = false
