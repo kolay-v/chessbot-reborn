@@ -146,7 +146,7 @@ const formatTopMessage = (isWhiteTurn: boolean, player: FormatTopMessageUser, en
   const getSide = (white: boolean): string => white ? 'White' : 'Black'
   return `${getSide(!isWhiteTurn)} (top) - ${enemyString}
 ${getSide(isWhiteTurn)} (bottom) - ${playerString}
-${enemy != null ? `${getSide(isWhiteTurn)}'s turn` : 'Join Now!'} | <a href="https://t.me/chessbot_chat">Discussion</a>`
+${enemy != null ? `${getSide(isWhiteTurn)}'s turn` : 'Join Now!'} | <a href="https://t.me/chessbot_chat">Discussion</a> New!`
 }
 
 interface GetBoardMessageParams {
