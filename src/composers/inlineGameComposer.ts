@@ -51,7 +51,7 @@ inlineGameComposer.on('inline_query', async ctx => {
       squares: board.squares,
       isWhite: false,
       callbackOverride: `v2:join:b:${ctx.from.id}`
-    }).row().text('Join the game.', `join:b:${ctx.from.id}`)
+    }).row().text('Join the game.', `v2:join:b:${ctx.from.id}`)
   },
   {
     id: 'black',
@@ -65,7 +65,7 @@ inlineGameComposer.on('inline_query', async ctx => {
       squares: board.squares,
       isWhite: false,
       callbackOverride: `v2:join:w:${ctx.from.id}`
-    }).row().text('Join the game.', `join:w:${ctx.from.id}`)
+    }).row().text('Join the game.', `v2:join:w:${ctx.from.id}`)
   }], {
     cache_time: 0,
     is_personal: true
