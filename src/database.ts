@@ -34,11 +34,16 @@ export class Database {
     if (inlineMessageId == null) {
       return null
     }
-    return await this.knex
+    const game = await this.knex
       .select('id', 'whites_id', 'blacks_id')
       .from('games')
       .where({ inline_id: inlineMessageId })
       .first()
+    if (game != null) {
+      game.whites_id = Number(game.whites_id)
+      game.blacks_id = Number(game.blacks_id)
+    }
+    return game
   }
 
   async createGame (whiteId: number, blackId: number, inlineMessageId: string): Promise<number | undefined> {

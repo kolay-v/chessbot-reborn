@@ -86,7 +86,6 @@ inlineGameComposer
       return
     }
     ctx.session.wait = true
-    ctx.session.wait = true
     await ctx.db.createOrUpdateUser(ctx.from)
     const enemy = await ctx.db.getUser(enemyId)
 
