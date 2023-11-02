@@ -1,5 +1,5 @@
 import { type InlineKeyboardButton } from 'grammy/out/types'
-import { type AlgebraicGameStatus, type ChessBoard, type NotatedMove, type Piece, type Square } from 'chess'
+import { type AlgebraicGameStatus, type ChessBoard, type GameStatus, type NotatedMove, type Piece, type Square } from 'chess'
 import { InlineKeyboard } from 'grammy'
 import { type BoardMessage, type Color, type CompactUser, type MaterialDiff, type MaterialDiffSide } from './types'
 
@@ -115,6 +115,23 @@ interface BoardImageOptions {
   arrows?: string[]
 }
 
+const formatStatus = ({ isCheck, isRepetition, isCheckMate, isStalemate }: GameStatus): string => {
+  const result: string[] = []
+  if (isCheck) {
+    result.push('CHECK')
+  }
+  if (isCheckMate) {
+    result.push('CHECK MATE')
+  }
+  if (isStalemate) {
+    result.push('STALE MATE')
+  }
+  if (isRepetition) {
+    result.push('REPETITION')
+  }
+  return result.join(' | ')
+}
+
 const makeBoardImageUrl = (board: ChessBoard, { rotate, boardSize, moves, arrows }: BoardImageOptions = {}): string => {
   const boardWithFen = board as ChessBoard & { getFen: () => string }
   const fen = encodeURIComponent(boardWithFen.getFen())
@@ -140,13 +157,14 @@ const makeBoardImageUrl = (board: ChessBoard, { rotate, boardSize, moves, arrows
 
 type FormatTopMessageUser = CompactUser & { materialDiffString?: string | null }
 
-const formatTopMessage = (isWhiteTurn: boolean, player: FormatTopMessageUser, enemy?: FormatTopMessageUser): string => {
+const formatTopMessage = (isWhiteTurn: boolean, status: string, player: FormatTopMessageUser, enemy?: FormatTopMessageUser): string => {
   const playerString = `<a href="tg://user?id=${player.id}">${escapeHTML(player.first_name)}</a>${player.materialDiffString ?? ''}`
   const enemyString = (enemy != null) ? `<a href="tg://user?id=${enemy.id}">${escapeHTML(enemy.first_name)}</a>${enemy.materialDiffString ?? ''}` : '?'
   const getSide = (white: boolean): string => white ? 'White' : 'Black'
   return `${getSide(!isWhiteTurn)} (top) - ${enemyString}
 ${getSide(isWhiteTurn)} (bottom) - ${playerString}
-${enemy != null ? `${getSide(isWhiteTurn)}'s turn` : 'Join Now!'} | <a href="https://t.me/chessbot_chat">Discussion</a> New!`
+${enemy != null ? `${getSide(isWhiteTurn)}'s turn` : 'Join Now!'} | <a href="https://t.me/chessbot_chat">Discussion</a> new
+${status}`
 }
 
 interface GetBoardMessageParams {
@@ -212,7 +230,7 @@ const getBoardMessage = ({ status, isWhiteTurn, player, enemy, moves = [], lastM
       moves,
       arrows: lastMoveArrow != null ? [lastMoveArrow] : []
     }),
-    text: formatTopMessage(isWhiteTurn, {
+    text: formatTopMessage(isWhiteTurn, formatStatus(status), {
       ...player,
       materialDiffString: formatMaterialString(materialDiff[getCurrentSide(isWhiteTurn)], isWhiteTurn ? materialScore : -materialScore)
     }, {

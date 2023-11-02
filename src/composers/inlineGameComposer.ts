@@ -45,7 +45,7 @@ inlineGameComposer.on('inline_query', async ctx => {
     photo_url: makeBoardImageUrl(board),
     thumbnail_url: makeBoardImageUrl(board, { boardSize: 128 }),
     title: 'Play as white',
-    caption: formatTopMessage(true, ctx.from),
+    caption: formatTopMessage(true, '', ctx.from),
     parse_mode: 'HTML',
     reply_markup: renderBoardKeyboard({
       squares: board.squares,
@@ -59,7 +59,7 @@ inlineGameComposer.on('inline_query', async ctx => {
     photo_url: makeBoardImageUrl(board, { rotate: true }),
     thumbnail_url: makeBoardImageUrl(board, { rotate: true, boardSize: 128 }),
     title: 'Play as black',
-    caption: formatTopMessage(false, ctx.from),
+    caption: formatTopMessage(false, '', ctx.from),
     parse_mode: 'HTML',
     reply_markup: renderBoardKeyboard({
       squares: board.squares,
