@@ -6,8 +6,9 @@ import { adminComposer } from './adminComposer'
 const mainComposer = new Composer<MyContext>()
 
 mainComposer.command('start', async ctx => {
+  const me = await ctx.api.getMe()
   await ctx.reply(
-    'To play chess with a friend, type @chessy_bot to your message input field.',
+    `To play chess with a friend, type @${me.username} to your message input field.`,
     {
       reply_markup: new InlineKeyboard()
         .switchInline('Play with friend', '')
