@@ -163,7 +163,7 @@ const formatTopMessage = (isWhiteTurn: boolean, status: string, player: FormatTo
   const getSide = (white: boolean): string => white ? 'White' : 'Black'
   return `${getSide(!isWhiteTurn)} (top) - ${enemyString}
 ${getSide(isWhiteTurn)} (bottom) - ${playerString}
-${enemy != null ? `${getSide(isWhiteTurn)}'s turn` : 'Join Now!'} | <a href="https://t.me/chessbot_chat">Discussion</a> new
+${enemy != null ? `${getSide(isWhiteTurn)}'s turn` : 'Join Now!'} | <a href="https://t.me/chessbot_chat">Discussion</a>
 ${status}`
 }
 
@@ -247,7 +247,7 @@ const getBoardMessage = ({ status, isWhiteTurn, player, enemy, moves = [], lastM
       }),
       isWhite: isWhiteTurn
 
-    }).row().text('Last turn.', 'v2:last_turn')
+    }).row().text('Last turn', 'v2:last_turn')
   }
 }
 
