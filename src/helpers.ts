@@ -113,6 +113,7 @@ interface BoardImageOptions {
   boardSize?: number
   moves?: NotatedMove[]
   arrows?: string[]
+  selected?: string
 }
 
 const formatStatus = ({ isCheck, isRepetition, isCheckMate, isStalemate }: GameStatus): string => {
@@ -132,7 +133,7 @@ const formatStatus = ({ isCheck, isRepetition, isCheckMate, isStalemate }: GameS
   return result.join(' | ')
 }
 
-const makeBoardImageUrl = (board: ChessBoard, { rotate, boardSize, moves, arrows }: BoardImageOptions = {}): string => {
+const makeBoardImageUrl = (board: ChessBoard, { rotate, boardSize, moves, arrows, selected }: BoardImageOptions = {}): string => {
   const boardWithFen = board as ChessBoard & { getFen: () => string }
   const fen = encodeURIComponent(boardWithFen.getFen())
 
@@ -147,6 +148,9 @@ const makeBoardImageUrl = (board: ChessBoard, { rotate, boardSize, moves, arrows
     arrows.forEach(arrow => {
       params.append('arrows', arrow)
     })
+  }
+  if (selected != null) {
+    params.append('selected', selected)
   }
   if (moves != null && moves.length !== 0) {
     params.append('marks', moves.map(({ dest }) => `${dest.file}${dest.rank}`).join(','))
@@ -174,6 +178,7 @@ interface GetBoardMessageParams {
   enemy: CompactUser
   moves?: NotatedMove[]
   lastMoveArrow?: string
+  selected?: string
 }
 
 const getMaterialDiff = (board: ChessBoard): MaterialDiff => {
@@ -220,7 +225,7 @@ const formatMaterialString = (diff: MaterialDiffSide, score: number): string | n
   }
 }
 
-const getBoardMessage = ({ status, isWhiteTurn, player, enemy, moves = [], lastMoveArrow }: GetBoardMessageParams): BoardMessage => {
+const getBoardMessage = ({ status, isWhiteTurn, player, enemy, moves = [], lastMoveArrow, selected = '' }: GetBoardMessageParams): BoardMessage => {
   const { board } = status
   const materialDiff = getMaterialDiff(board)
   const materialScore = getScore(materialDiff)
@@ -228,7 +233,8 @@ const getBoardMessage = ({ status, isWhiteTurn, player, enemy, moves = [], lastM
     imageUrl: makeBoardImageUrl(board, {
       rotate: !isWhiteTurn,
       moves,
-      arrows: lastMoveArrow != null ? [lastMoveArrow] : []
+      arrows: lastMoveArrow != null ? [lastMoveArrow] : [],
+      selected
     }),
     text: formatTopMessage(isWhiteTurn, formatStatus(status), {
       ...player,

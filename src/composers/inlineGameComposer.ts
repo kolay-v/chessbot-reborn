@@ -216,7 +216,8 @@ inlineGameComposer.callbackQuery(/^v2:([a-h])([1-8])$/, async ctx => {
       isWhiteTurn: isWhiteTurn(moves),
       moves: allowedMoves,
       player: ctx.from,
-      enemy
+      enemy,
+      selected: `${pressed.file}${pressed.rank}`
     })
     await updateBoard(ctx, boardMsg)
 
