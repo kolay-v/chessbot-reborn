@@ -404,7 +404,7 @@ inlineGameComposer.callbackQuery('v2:last_turn', async ctx => {
     isWhiteTurn: isWhite,
     player: enemy,
     enemy: ctx.from,
-    lastMoveArrow: arrow
+    lastMoveArrow: `${arrow}${move.src.piece.type === 'knight' ? 'k' : ''}`
   })
 
   try {
